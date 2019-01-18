@@ -1,0 +1,74 @@
+FeatureScript 920;
+import(path : "onshape/std/geometry.fs", version : "920.0");
+
+
+import(path : "c12a4974bd759405f3e56cf4", version : "368feb723a1e5f1a790697d1");
+
+
+
+const curveData = BLOB_DATA.csvData;
+
+annotation { "Feature Type Name" : "Make Polyline" }
+export const makePolyline = defineFeature(function(context is Context, id is Id, definition is map)
+    precondition
+    {
+        // Define the parameters of the feature type
+    }
+    {
+        // Define the function's action
+        for (var zulu = 126; zulu <= 426; zulu += 20)
+        {
+            var drawPoints = [];
+            var point = [];
+
+            for (var row in curveData) //curveData is array with XYZ in one unit, variable row automatically loops through all units in curveData
+            {
+                if (row[2] == zulu)
+                {
+                    point = vector(row[0], row[1]) * millimeter; // point is a temporary variable that takes XY in millimeters as vectors
+                    drawPoints = append(drawPoints, point); // drawPoints is final variable that constantly has data from point appended to it. We use this 
+                }// append structure to prevent throwing the "vector" error that skPolyline would eventually throw
+
+            } 
+            
+            var yankee = "sketch";
+            //var xylo = yankee~zulu;
+            var doubleZulu = zulu ~ zulu;
+            doubleZulu = newSketchOnPlane(context, id + zulu + yankee, {
+                    "sketchPlane" : plane(vector(0, 0, zulu) * millimeter, vector(0, 0, 1))
+                });
+            var whiskey = "polyline";
+            var victor = whiskey ~ zulu;
+            skPolyline(doubleZulu, victor, {
+                        "points" : drawPoints // draw the polyline from drawpoint vector array
+                    });
+            skSolve(doubleZulu);
+
+
+            var count = 5;
+            var largestFace = qLargest(qSketchRegion(id + zulu + yankee)); // query all entities in sketchregion, then query largest of them, then save that face as largest face
+
+            for (var uniform = 0; uniform <= count; uniform += 1)
+            {
+                //debug(context, largestFace);
+                var tango = "deleteFace";
+               // var sierra = tango ~ zulu ~ uniform; // concatenation allows for looping through as it provides a unique id for opDeleteFace each loop
+                opDeleteFace(context, id + zulu + uniform + tango, {
+                            "deleteFaces" : largestFace, // use the largest face from that loop
+                            "includeFillet" : false,
+                            "capVoid" : false,
+                            "leaveOpen" : true
+                        });
+            }
+            var romeo = "extrude"; 
+            //var quebec = romeo + zulu;
+            opExtrude(context, id + zulu + romeo, { // at the end of opDeleteFace loop, extrude what is left of the sketch
+                        "entities" : qSketchRegion(id + zulu + yankee), // the sketch reg
+                        "direction" : evOwnerSketchPlane(context, { "entity" : qSketchRegion(id) }).normal,
+                        "endBound" : BoundingType.BLIND,
+                        "endDepth" : 20 * millimeter
+                    });
+        }
+
+
+    }, {});
